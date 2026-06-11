@@ -9,38 +9,138 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/app'
+import { Route as AuthenticatedAppIndexRouteImport } from './routes/_authenticated/app.index'
+import { Route as AuthenticatedAppAssessIndexRouteImport } from './routes/_authenticated/app.assess.index'
+import { Route as AuthenticatedAppResultsAssessmentIdRouteImport } from './routes/_authenticated/app.results.$assessmentId'
+import { Route as AuthenticatedAppAssessAssessmentIdRouteImport } from './routes/_authenticated/app.assess.$assessmentId'
 
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedAppRoute = AuthenticatedAppRouteImport.update({
+  id: '/app',
+  path: '/app',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedAppIndexRoute = AuthenticatedAppIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedAppRoute,
+} as any)
+const AuthenticatedAppAssessIndexRoute =
+  AuthenticatedAppAssessIndexRouteImport.update({
+    id: '/assess/',
+    path: '/assess/',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
+const AuthenticatedAppResultsAssessmentIdRoute =
+  AuthenticatedAppResultsAssessmentIdRouteImport.update({
+    id: '/results/$assessmentId',
+    path: '/results/$assessmentId',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
+const AuthenticatedAppAssessAssessmentIdRoute =
+  AuthenticatedAppAssessAssessmentIdRouteImport.update({
+    id: '/assess/$assessmentId',
+    path: '/assess/$assessmentId',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/app': typeof AuthenticatedAppRouteWithChildren
+  '/app/': typeof AuthenticatedAppIndexRoute
+  '/app/assess/$assessmentId': typeof AuthenticatedAppAssessAssessmentIdRoute
+  '/app/results/$assessmentId': typeof AuthenticatedAppResultsAssessmentIdRoute
+  '/app/assess/': typeof AuthenticatedAppAssessIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/app': typeof AuthenticatedAppIndexRoute
+  '/app/assess/$assessmentId': typeof AuthenticatedAppAssessAssessmentIdRoute
+  '/app/results/$assessmentId': typeof AuthenticatedAppResultsAssessmentIdRoute
+  '/app/assess': typeof AuthenticatedAppAssessIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/auth': typeof AuthRoute
+  '/_authenticated/app': typeof AuthenticatedAppRouteWithChildren
+  '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
+  '/_authenticated/app/assess/$assessmentId': typeof AuthenticatedAppAssessAssessmentIdRoute
+  '/_authenticated/app/results/$assessmentId': typeof AuthenticatedAppResultsAssessmentIdRoute
+  '/_authenticated/app/assess/': typeof AuthenticatedAppAssessIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/app'
+    | '/app/'
+    | '/app/assess/$assessmentId'
+    | '/app/results/$assessmentId'
+    | '/app/assess/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/auth'
+    | '/app'
+    | '/app/assess/$assessmentId'
+    | '/app/results/$assessmentId'
+    | '/app/assess'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authenticated'
+    | '/auth'
+    | '/_authenticated/app'
+    | '/_authenticated/app/'
+    | '/_authenticated/app/assess/$assessmentId'
+    | '/_authenticated/app/results/$assessmentId'
+    | '/_authenticated/app/assess/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AuthRoute: typeof AuthRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,12 +148,89 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/app': {
+      id: '/_authenticated/app'
+      path: '/app'
+      fullPath: '/app'
+      preLoaderRoute: typeof AuthenticatedAppRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/app/': {
+      id: '/_authenticated/app/'
+      path: '/'
+      fullPath: '/app/'
+      preLoaderRoute: typeof AuthenticatedAppIndexRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/app/assess/': {
+      id: '/_authenticated/app/assess/'
+      path: '/assess'
+      fullPath: '/app/assess/'
+      preLoaderRoute: typeof AuthenticatedAppAssessIndexRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/app/results/$assessmentId': {
+      id: '/_authenticated/app/results/$assessmentId'
+      path: '/results/$assessmentId'
+      fullPath: '/app/results/$assessmentId'
+      preLoaderRoute: typeof AuthenticatedAppResultsAssessmentIdRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/app/assess/$assessmentId': {
+      id: '/_authenticated/app/assess/$assessmentId'
+      path: '/assess/$assessmentId'
+      fullPath: '/app/assess/$assessmentId'
+      preLoaderRoute: typeof AuthenticatedAppAssessAssessmentIdRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
   }
 }
 
+interface AuthenticatedAppRouteChildren {
+  AuthenticatedAppIndexRoute: typeof AuthenticatedAppIndexRoute
+  AuthenticatedAppAssessAssessmentIdRoute: typeof AuthenticatedAppAssessAssessmentIdRoute
+  AuthenticatedAppResultsAssessmentIdRoute: typeof AuthenticatedAppResultsAssessmentIdRoute
+  AuthenticatedAppAssessIndexRoute: typeof AuthenticatedAppAssessIndexRoute
+}
+
+const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
+  AuthenticatedAppIndexRoute: AuthenticatedAppIndexRoute,
+  AuthenticatedAppAssessAssessmentIdRoute:
+    AuthenticatedAppAssessAssessmentIdRoute,
+  AuthenticatedAppResultsAssessmentIdRoute:
+    AuthenticatedAppResultsAssessmentIdRoute,
+  AuthenticatedAppAssessIndexRoute: AuthenticatedAppAssessIndexRoute,
+}
+
+const AuthenticatedAppRouteWithChildren =
+  AuthenticatedAppRoute._addFileChildren(AuthenticatedAppRouteChildren)
+
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAppRoute: typeof AuthenticatedAppRouteWithChildren
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAppRoute: AuthenticatedAppRouteWithChildren,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AuthRoute: AuthRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

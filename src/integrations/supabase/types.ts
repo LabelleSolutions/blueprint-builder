@@ -14,7 +14,289 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      assessments: {
+        Row: {
+          created_at: string
+          id: string
+          response: string | null
+          role: Database["public"]["Enums"]["leadership_role"]
+          scenario_id: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          response?: string | null
+          role: Database["public"]["Enums"]["leadership_role"]
+          scenario_id: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          response?: string | null
+          role?: Database["public"]["Enums"]["leadership_role"]
+          scenario_id?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assessments_scenario_id_fkey"
+            columns: ["scenario_id"]
+            isOneToOne: false
+            referencedRelation: "scenarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      characters: {
+        Row: {
+          burnout: number | null
+          id: string
+          influence: number | null
+          loyalty: number | null
+          motivation: number | null
+          name: string | null
+          organization_id: string | null
+          personality_json: Json | null
+          role: string | null
+          trust: number | null
+        }
+        Insert: {
+          burnout?: number | null
+          id?: string
+          influence?: number | null
+          loyalty?: number | null
+          motivation?: number | null
+          name?: string | null
+          organization_id?: string | null
+          personality_json?: Json | null
+          role?: string | null
+          trust?: number | null
+        }
+        Update: {
+          burnout?: number | null
+          id?: string
+          influence?: number | null
+          loyalty?: number | null
+          motivation?: number | null
+          name?: string | null
+          organization_id?: string | null
+          personality_json?: Json | null
+          role?: string | null
+          trust?: number | null
+        }
+        Relationships: []
+      }
+      digital_twins: {
+        Row: {
+          coaching_score: number | null
+          communication_score: number | null
+          conflict_score: number | null
+          delegation_score: number | null
+          empathy_score: number | null
+          id: string
+          overall_score: number | null
+          resilience_score: number | null
+          strategic_score: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          coaching_score?: number | null
+          communication_score?: number | null
+          conflict_score?: number | null
+          delegation_score?: number | null
+          empathy_score?: number | null
+          id?: string
+          overall_score?: number | null
+          resilience_score?: number | null
+          strategic_score?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          coaching_score?: number | null
+          communication_score?: number | null
+          conflict_score?: number | null
+          delegation_score?: number | null
+          empathy_score?: number | null
+          id?: string
+          overall_score?: number | null
+          resilience_score?: number | null
+          strategic_score?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      events: {
+        Row: {
+          created_at: string
+          event_type: string | null
+          id: string
+          organization_id: string | null
+          payload: Json | null
+          severity: number | null
+        }
+        Insert: {
+          created_at?: string
+          event_type?: string | null
+          id?: string
+          organization_id?: string | null
+          payload?: Json | null
+          severity?: number | null
+        }
+        Update: {
+          created_at?: string
+          event_type?: string | null
+          id?: string
+          organization_id?: string | null
+          payload?: Json | null
+          severity?: number | null
+        }
+        Relationships: []
+      }
+      personality_profiles: {
+        Row: {
+          agreeableness: number | null
+          conscientiousness: number | null
+          extraversion: number | null
+          id: string
+          neuroticism: number | null
+          openness: number | null
+          user_id: string
+        }
+        Insert: {
+          agreeableness?: number | null
+          conscientiousness?: number | null
+          extraversion?: number | null
+          id?: string
+          neuroticism?: number | null
+          openness?: number | null
+          user_id: string
+        }
+        Update: {
+          agreeableness?: number | null
+          conscientiousness?: number | null
+          extraversion?: number | null
+          id?: string
+          neuroticism?: number | null
+          openness?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          industry: string | null
+          name: string | null
+          role: string | null
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id: string
+          industry?: string | null
+          name?: string | null
+          role?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          industry?: string | null
+          name?: string | null
+          role?: string | null
+        }
+        Relationships: []
+      }
+      results: {
+        Row: {
+          accountability: number
+          assessment_id: string
+          clarity: number
+          coaching: number
+          coaching_feedback: string
+          created_at: string
+          empathy: number
+          missed: string[]
+          outcome_projection: Json
+          psychological_safety: number
+          readiness_score: number
+          strengths: string[]
+          suggestions: string[]
+        }
+        Insert: {
+          accountability: number
+          assessment_id: string
+          clarity: number
+          coaching: number
+          coaching_feedback: string
+          created_at?: string
+          empathy: number
+          missed: string[]
+          outcome_projection: Json
+          psychological_safety: number
+          readiness_score: number
+          strengths: string[]
+          suggestions: string[]
+        }
+        Update: {
+          accountability?: number
+          assessment_id?: string
+          clarity?: number
+          coaching?: number
+          coaching_feedback?: string
+          created_at?: string
+          empathy?: number
+          missed?: string[]
+          outcome_projection?: Json
+          psychological_safety?: number
+          readiness_score?: number
+          strengths?: string[]
+          suggestions?: string[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "results_assessment_id_fkey"
+            columns: ["assessment_id"]
+            isOneToOne: true
+            referencedRelation: "assessments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scenarios: {
+        Row: {
+          created_at: string
+          id: string
+          prompt: string
+          role: Database["public"]["Enums"]["leadership_role"]
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          prompt: string
+          role: Database["public"]["Enums"]["leadership_role"]
+          title: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          prompt?: string
+          role?: Database["public"]["Enums"]["leadership_role"]
+          title?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +305,13 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      leadership_role:
+        | "engineering_manager"
+        | "team_lead"
+        | "project_manager"
+        | "hr_manager"
+        | "operations_manager"
+        | "teacher"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +438,15 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      leadership_role: [
+        "engineering_manager",
+        "team_lead",
+        "project_manager",
+        "hr_manager",
+        "operations_manager",
+        "teacher",
+      ],
+    },
   },
 } as const

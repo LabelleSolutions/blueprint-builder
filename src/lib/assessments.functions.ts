@@ -79,7 +79,7 @@ export const submitResponse = createServerFn({ method: "POST" })
 
     const { scoreResponse } = await import("./ai-judge.server");
     const scenarioPrompt = (a.scenario as { prompt: string } | null)?.prompt ?? "";
-    const judged = scoreResponse({
+    const judged = await scoreResponse({
       role: a.role,
       scenarioPrompt,
       response: data.response,

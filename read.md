@@ -1,100 +1,148 @@
-# Mastery Leadership Readiness — Phase 1 Status
+# Mastery Leadership Readiness — Phase 2 Status
 
 **Last verified:** 2026-06-12
-**Phase:** MVP scaffold complete, AI judge running as deterministic stub (no live API).
-**Next phase owner:** swap stub for live Lovable AI Gateway call + production polish.
+**Phase:** Config-driven refactor complete. Single AI provider swap-point in place.
+**Stub provider:** deterministic local (`mock-deterministic`). No live model wired yet.
 
 ---
 
-## ✅ What's working (verified)
+## 📄 Source documents
 
-### Database (Lovable Cloud / Postgres)
-- All 8 tables present: `profiles`, `scenarios`, `assessments`, `results`, `digital_twins`, `personality_profiles`, `characters`, `events`.
-- `leadership_role` enum with 6 PRD roles.
-- 12 scenarios seeded — 2 per role (engineering_manager, team_lead, project_manager, hr_manager, operations_manager, teacher).
-- RLS enabled on all user tables; `scenarios` readable by authenticated; `results` writes only via `supabaseAdmin` inside server fn.
-- `auth.users` insert trigger → `profiles` row.
-- Blueprint scaffold tables (`digital_twins`, `personality_profiles`, `characters`, `events`) exist with restricted grants — **no MVP UI writes yet**.
-
-### AI Judge Engine — `src/lib/ai-judge.server.ts`
-- Deterministic local stub. **Not wired to any live AI API.**
-- Implements all 4 Blueprint engines in one function `scoreResponse({ role, scenarioPrompt, response })`:
-  1. **Leadership Signal Engine** — keyword regex buckets per competency.
-  2. **Competency Growth Logic** — signals → 0–100 sub-scores with hash-stable jitter.
-  3. **Reflection Engine** — top-2 strengths, bottom-2 missed + suggestions from templates.
-  4. **Outcome Projection** — `trust_30d / team_morale_90d / promotion_readiness_365d` deltas scaled by readiness.
-- PRD readiness formula applied verbatim:
-  `readiness = empathy*0.20 + accountability*0.20 + coaching*0.25 + clarity*0.15 + psychological_safety*0.20`
-- Smoke-tested with short + rich responses → produces distinct, sensible scores (36 vs 65).
-
-### Server functions — `src/lib/assessments.functions.ts`
-All protected by `requireSupabaseAuth`:
-- `startAssessment({ role })` → picks random scenario, creates assessment, returns id.
-- `getAssessment({ id })` — for the scenario screen.
-- `submitResponse({ id, response })` — runs judge, writes result, marks assessment `scored`.
-- `getAssessmentWithResult({ id })` — for the report.
-- `listMyAssessments()` — dashboard history.
-
-### Routes & UI
-- `/` Landing — hero, 5 competencies card, CTA. Renders cleanly (verified in preview).
-- `/auth` — email + Google sign-in.
-- `/app` (protected) — dashboard + history.
-- `/app/assess` — role selection (6 cards).
-- `/app/assess/$assessmentId` — scenario prompt + textarea.
-- `/app/results/$assessmentId` — readiness gauge, 5 competency bars, reflection panel, outcome projection.
-- Protected gate: `src/routes/_authenticated/route.tsx` redirects to `/auth` if no session.
-- `attachSupabaseAuth` registered in `src/start.ts` global functionMiddleware.
-- Design system: warm off-white bg, deep-indigo accent, serif headings, minimalist per PRD.
-
-### Build health
-- `tsc --noEmit` → **0 errors.**
-- Migrations apply cleanly.
-- No console errors on landing page.
+1. **Mastery_Loveable_Agent_Handoff_v1.pdf** — refactor spec. Config-driven competencies / roles / scenarios; isolated Judge Engine; explainability per score; readiness derived (not a competency); mobile-first; users / roles / scenarios / assessments / results tables.
+2. **Leadership_Digital_Twin_Code_Blueprint.pdf** — full platform blueprint (digital twins, characters, events, simulation). **Out of MVP scope.** Foundation tables exist in DB but have no UI writes.
 
 ---
 
-## ⚠️ What's stubbed / pending live wire-up
+## ✅ MVP Scope (built)
 
-| Area | Current | Next step |
+Landing → Role Selection → Scenario → Response → Judge Engine → Competency Scoring → Readiness Report.
+
+Nothing else. No dashboards beyond a thin history list, no gamification, no digital twin UI, no simulation engine.
+
+---
+
+## 🏗 Architecture — config-driven
+
+All domain knowledge lives in `src/config/*`. Adding a competency, role, or rebalancing weights touches ONE file, no engine or UI code.
+
+| File | Owns |
+| --- | --- |
+| `src/config/competencies.ts` | Competency ids, labels, weights, descriptions, behavioural signals (regex), explainability templates (strength / missed / suggestion / coaching focus). |
+| `src/config/roles.ts` | Role ids, labels, taglines, target competencies. |
+| `supabase` — `scenarios` table | Scenario library (already dynamic; seeded per role). |
+
+Readiness weights sum to 1.0 across the competency config and are consumed by the Readiness Engine — never duplicated in UI or DB.
+
+---
+
+## 🤖 AI Provider abstraction — single swap-point
+
+> Founder ask: "single AI provider interface that allows the platform to switch between Gemini, OpenAI, Claude, or future models without changing any UI, business logic, database schema, assessment workflow, competency engine, or readiness engine."
+
+### Files
+
+| File | Role |
+| --- | --- |
+| `src/lib/ai/provider.ts` | **Provider interface** — `AIProvider`, `JudgeInput`, `JudgeOutput`, `CompetencyScore` (score + reason + evidence + recommendation). |
+| `src/lib/ai/mock-provider.ts` | **Current mock implementation** — deterministic local scorer using competency config. Conforms to `AIProvider`. |
+| `src/lib/ai/index.ts` | **The single swap-point.** Re-exports `aiProvider`. Every consumer imports from here. |
+| `src/lib/ai-judge.server.ts` | **Judge + Readiness Engine.** Calls `aiProvider.judgeResponse(...)`, computes weighted readiness from competency config, assembles explainability, projection, coaching narrative. Contains zero model strings and zero prompts. |
+
+### Provider interface
+
+```ts
+interface AIProvider {
+  readonly name: string;
+  judgeResponse(input: JudgeInput): Promise<JudgeOutput>;
+}
+
+interface CompetencyScore {
+  id: string;
+  score: number;       // 0–100
+  reason: string;
+  evidence: string;
+  recommendation: string;
+}
+```
+
+### How to add a new provider (no other file changes)
+
+```ts
+// src/lib/ai/gemini-provider.ts
+export const geminiProvider: AIProvider = {
+  name: "gemini-2.5-flash",
+  async judgeResponse({ roleId, scenarioPrompt, response }) {
+    const out = await callLovableAIGateway({
+      model: "google/gemini-2.5-flash",
+      prompt: buildJudgePrompt({ roleId, scenarioPrompt, response }),
+    });
+    return parseJudgeJSON(out); // must satisfy JudgeOutput
+  },
+};
+
+// src/lib/ai/index.ts  ← THE ONLY LINE THAT CHANGES
+export const aiProvider: AIProvider = geminiProvider;
+```
+
+Same shape for OpenAI (`openai/gpt-5-mini`) and Claude (Anthropic SDK). The Readiness Engine **always recomputes** the weighted sum server-side; the model is never trusted for that math.
+
+---
+
+## 🗄 Database
+
+Tables (existing): `profiles`, `roles*`, `scenarios`, `assessments`, `results`.
+*Roles are currently a Postgres enum mirroring `src/config/roles.ts`; adding a role = one-line enum migration.*
+
+Future-prep tables already exist (no UI writes): `digital_twins`, `personality_profiles`, `characters`, `events`. PRD also lists `reflection_entries`, `competency_definitions`, `industry_packs` — **not built** (kept in config files for now per "config-driven before tables").
+
+RLS enabled on all user tables. Writes to `results` go through `supabaseAdmin` inside server fn.
+
+---
+
+## ⚠️ Pending (deliberately deferred)
+
+| Area | Why deferred | Next |
 | --- | --- | --- |
-| AI Judge | Deterministic local function | Replace `scoreResponse` body with Lovable AI Gateway call returning same shape — zero caller changes. |
-| Digital Twin updates | Tables exist, no writes | Wire `submitResponse` to update `digital_twins` per user after scoring. |
-| Personality profiles | Tables exist, no UI | Add intake flow (Big Five). |
-| Characters / events (Blueprint sim layer) | Tables exist, no UI | Out of MVP scope. |
-| Email templates / branded auth emails | Default Supabase | Customize when going live. |
-| SEO | Per-route head() basics | Add og:image for share previews. |
+| Live AI provider | Stub keeps loop deterministic | Replace `aiProvider` export in `src/lib/ai/index.ts`. |
+| `explainability` JSONB column on `results` | Computed per scoring run but not persisted yet | Add column + surface per-competency reason/evidence/recommendation on report. |
+| Reflection loop (`reflection_score`, `self_assessment`, `self_awareness_gap`) | PRD says prepare, not build | Add fields when reflection feature starts. |
+| Industry packs | Out of MVP | Promote `competencies.ts` / `roles.ts` to per-industry packs when needed. |
+| Digital Twin / Simulation / Multi-agent | Explicitly out of MVP | Blueprint preserved as reference only. |
 
 ---
 
-## 🧪 Manual QA checklist for next agent
+## 🚫 Red-flag check
 
-Before touching live AI, run through:
-
-1. Sign up via `/auth` (email).
-2. Land on `/app` — empty dashboard, "Start new" visible.
-3. Pick role → scenario loads.
-4. Submit a **short** answer (~30 chars) → readiness should be low (~30–45).
-5. Submit a **rich** answer with empathy + accountability + coaching language → readiness should be 60+.
-6. Report shows: gauge, 5 bars, 2 strengths, 2 dev areas, 2 suggestions, coaching paragraph, outcome projection 30/90/365.
-7. Back to `/app` — history row shows readiness score.
-8. Verify RLS: second user cannot see first user's assessments (test by signing in with different account).
-
----
-
-## 🔌 Where to swap in live AI (single point)
-
-`src/lib/ai-judge.server.ts` → replace the body of `scoreResponse()`.
-- Input shape: `{ role, scenarioPrompt, response }`
-- Required return shape: `JudgeResult` (exported from same file).
-- Recommended: use Lovable AI Gateway (`@/integrations/lovable`) — no API key needed.
-- Keep the readiness formula server-side (do not trust model output for the weighted sum — recompute).
+| Anti-pattern | Status |
+| --- | --- |
+| Hardcoded competencies | ✅ Removed — `src/config/competencies.ts` |
+| Hardcoded roles | ✅ Removed — `src/config/roles.ts` (DB enum mirrors config) |
+| Hardcoded scenarios | ✅ DB-driven (`scenarios` table, seeded) |
+| AI prompts in UI | ✅ None — all model interaction behind `aiProvider` |
+| Dashboard explosion | ✅ Single thin history list |
+| Gamification | ✅ None |
+| Digital Twin / Simulation impl | ✅ Tables only; no UI/logic |
 
 ---
 
-## 📂 Key files
+## 🧪 QA checklist
 
-- `src/lib/ai-judge.server.ts` — judge stub
+1. Sign up → `/app` → pick role → short answer (~30 chars) → low readiness.
+2. Rich answer with empathy + accountability + coaching language → readiness 60+.
+3. Report renders gauge + 5 competency bars + strengths + dev areas + suggestions + coaching paragraph + projection.
+4. RLS — second user cannot see first user's assessments.
+5. Edit a competency weight in `src/config/competencies.ts` → readiness shifts without touching any other file.
+
+---
+
+## 📂 Key files (Phase 2)
+
+- `src/config/competencies.ts`
+- `src/config/roles.ts`
+- `src/lib/ai/provider.ts` — interface
+- `src/lib/ai/mock-provider.ts` — current impl
+- `src/lib/ai/index.ts` — **single swap-point**
+- `src/lib/ai-judge.server.ts` — Judge + Readiness Engine (config-driven, provider-agnostic)
 - `src/lib/assessments.functions.ts` — server fns
 - `src/routes/_authenticated/` — protected app routes
-- `supabase/migrations/2026061121*.sql` — schema + seed
-- `.lovable/plan.md` — full architecture plan
+- `supabase/migrations/*` — schema + scenario seed

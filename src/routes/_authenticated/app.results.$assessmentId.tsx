@@ -51,6 +51,8 @@ function ResultsPage() {
     team_morale_90d?: number;
     promotion_readiness_365d?: number;
   };
+  const explain = ((result as Record<string, unknown>).explainability ?? []) as Explain[];
+  const explainById = Object.fromEntries(explain.map((e) => [e.id, e]));
 
   return (
     <div className="space-y-8">

@@ -100,6 +100,37 @@ function ResultsPage() {
         </ul>
       </section>
 
+      {explain.length > 0 && (
+        <section className="rounded-2xl border border-border bg-card p-8">
+          <h2 className="font-serif text-2xl tracking-tight">Why you scored this way</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Every competency score comes with its reasoning, the evidence found in your answer, and one recommendation.
+          </p>
+          <div className="mt-6 space-y-4">
+            {BARS.map(({ key, label }) => {
+              const e = explainById[key];
+              if (!e) return null;
+              return (
+                <div key={key} className="rounded-xl border border-border bg-background p-5">
+                  <div className="flex items-baseline justify-between">
+                    <h3 className="font-medium">{label}</h3>
+                    <span className="font-serif text-xl text-primary">{e.score}</span>
+                  </div>
+                  <p className="mt-2 text-sm text-muted-foreground">{e.reason}</p>
+                  <p className="mt-2 text-sm italic text-muted-foreground">Evidence: {e.evidence}</p>
+                  <p className="mt-2 text-sm">
+                    <span className="text-primary">→ </span>
+                    {e.recommendation}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+
+
       <div className="grid gap-6 lg:grid-cols-2">
         <section className="rounded-2xl border border-border bg-card p-8">
           <h3 className="font-serif text-xl tracking-tight">Strengths</h3>

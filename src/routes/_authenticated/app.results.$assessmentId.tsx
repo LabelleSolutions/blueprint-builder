@@ -3,18 +3,26 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { getAssessmentWithResult, ROLE_LABEL, type LeadershipRole } from "@/lib/assessments.functions";
 import { Button } from "@/components/ui/button";
+import { COMPETENCIES } from "@/config/competencies";
 
 export const Route = createFileRoute("/_authenticated/app/results/$assessmentId")({
   component: ResultsPage,
 });
 
-const BARS: { key: "empathy" | "accountability" | "coaching" | "clarity" | "psychological_safety"; label: string; weight: string }[] = [
-  { key: "empathy", label: "Empathy", weight: "20%" },
-  { key: "accountability", label: "Accountability", weight: "20%" },
-  { key: "coaching", label: "Coaching", weight: "25%" },
-  { key: "clarity", label: "Clarity", weight: "15%" },
-  { key: "psychological_safety", label: "Psychological Safety", weight: "20%" },
-];
+/** Bars are derived from the competency config — never hardcoded here. */
+const BARS = COMPETENCIES.map((c) => ({
+  key: c.id,
+  label: c.label,
+  weight: `${Math.round(c.weight * 100)}%`,
+}));
+
+interface Explain {
+  id: string;
+  score: number;
+  reason: string;
+  evidence: string;
+  recommendation: string;
+}
 
 function ResultsPage() {
   const { assessmentId } = Route.useParams();
@@ -43,6 +51,8 @@ function ResultsPage() {
     team_morale_90d?: number;
     promotion_readiness_365d?: number;
   };
+  const explain = ((result as Record<string, unknown>).explainability ?? []) as Explain[];
+  const explainById = Object.fromEntries(explain.map((e) => [e.id, e]));
 
   return (
     <div className="space-y-8">
@@ -89,6 +99,37 @@ function ResultsPage() {
           })}
         </ul>
       </section>
+
+      {explain.length > 0 && (
+        <section className="rounded-2xl border border-border bg-card p-8">
+          <h2 className="font-serif text-2xl tracking-tight">Why you scored this way</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Every competency score comes with its reasoning, the evidence found in your answer, and one recommendation.
+          </p>
+          <div className="mt-6 space-y-4">
+            {BARS.map(({ key, label }) => {
+              const e = explainById[key];
+              if (!e) return null;
+              return (
+                <div key={key} className="rounded-xl border border-border bg-background p-5">
+                  <div className="flex items-baseline justify-between">
+                    <h3 className="font-medium">{label}</h3>
+                    <span className="font-serif text-xl text-primary">{e.score}</span>
+                  </div>
+                  <p className="mt-2 text-sm text-muted-foreground">{e.reason}</p>
+                  <p className="mt-2 text-sm italic text-muted-foreground">Evidence: {e.evidence}</p>
+                  <p className="mt-2 text-sm">
+                    <span className="text-primary">→ </span>
+                    {e.recommendation}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+
 
       <div className="grid gap-6 lg:grid-cols-2">
         <section className="rounded-2xl border border-border bg-card p-8">

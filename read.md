@@ -104,7 +104,7 @@ RLS enabled on all user tables. Writes to `results` go through `supabaseAdmin` i
 | Area | Why deferred | Next |
 | --- | --- | --- |
 | Live AI provider | Stub keeps loop deterministic | Replace `aiProvider` export in `src/lib/ai/index.ts`. |
-| `explainability` JSONB column on `results` | Computed per scoring run but not persisted yet | Add column + surface per-competency reason/evidence/recommendation on report. |
+| ~~`explainability` JSONB on `results`~~ | ✅ **Done (2026-09-18)** — column added, persisted on every scoring run, rendered as a "Why you scored this way" section (reason + evidence + recommendation per competency). Report competency bars/weights now derive from `src/config/competencies.ts` instead of hardcoded UI values. | — |
 | Reflection loop (`reflection_score`, `self_assessment`, `self_awareness_gap`) | PRD says prepare, not build | Add fields when reflection feature starts. |
 | Industry packs | Out of MVP | Promote `competencies.ts` / `roles.ts` to per-industry packs when needed. |
 | Digital Twin / Simulation / Multi-agent | Explicitly out of MVP | Blueprint preserved as reference only. |

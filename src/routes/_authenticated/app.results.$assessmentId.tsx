@@ -3,18 +3,26 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { getAssessmentWithResult, ROLE_LABEL, type LeadershipRole } from "@/lib/assessments.functions";
 import { Button } from "@/components/ui/button";
+import { COMPETENCIES } from "@/config/competencies";
 
 export const Route = createFileRoute("/_authenticated/app/results/$assessmentId")({
   component: ResultsPage,
 });
 
-const BARS: { key: "empathy" | "accountability" | "coaching" | "clarity" | "psychological_safety"; label: string; weight: string }[] = [
-  { key: "empathy", label: "Empathy", weight: "20%" },
-  { key: "accountability", label: "Accountability", weight: "20%" },
-  { key: "coaching", label: "Coaching", weight: "25%" },
-  { key: "clarity", label: "Clarity", weight: "15%" },
-  { key: "psychological_safety", label: "Psychological Safety", weight: "20%" },
-];
+/** Bars are derived from the competency config — never hardcoded here. */
+const BARS = COMPETENCIES.map((c) => ({
+  key: c.id,
+  label: c.label,
+  weight: `${Math.round(c.weight * 100)}%`,
+}));
+
+interface Explain {
+  id: string;
+  score: number;
+  reason: string;
+  evidence: string;
+  recommendation: string;
+}
 
 function ResultsPage() {
   const { assessmentId } = Route.useParams();

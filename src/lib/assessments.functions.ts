@@ -105,6 +105,7 @@ export const submitResponse = createServerFn({ method: "POST" })
       suggestions: judged.suggestions,
       coaching_feedback: judged.coaching_feedback,
       outcome_projection: judged.outcome_projection,
+      explainability: judged.explainability,
     });
     if (rErr) throw new Error(rErr.message);
 

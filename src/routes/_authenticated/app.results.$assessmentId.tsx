@@ -4,6 +4,8 @@ import { useQuery } from "@tanstack/react-query";
 import { getAssessmentWithResult, ROLE_LABEL, type LeadershipRole } from "@/lib/assessments.functions";
 import { Button } from "@/components/ui/button";
 import { COMPETENCIES } from "@/config/competencies";
+import { downloadReadinessReportPdf } from "@/lib/report-pdf";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/app/results/$assessmentId")({
   component: ResultsPage,
@@ -56,11 +58,43 @@ function ResultsPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <div className="text-xs uppercase tracking-[0.2em] text-primary">
-          {ROLE_LABEL[assessment.role as LeadershipRole]}
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <div className="text-xs uppercase tracking-[0.2em] text-primary">
+            {ROLE_LABEL[assessment.role as LeadershipRole]}
+          </div>
+          <h1 className="mt-2 font-serif text-4xl tracking-tight">Your readiness report</h1>
         </div>
-        <h1 className="mt-2 font-serif text-4xl tracking-tight">Your readiness report</h1>
+        <Button
+          variant="outline"
+          onClick={() => {
+            try {
+              downloadReadinessReportPdf({
+                roleLabel: ROLE_LABEL[assessment.role as LeadershipRole],
+                scenarioTitle:
+                  (assessment.scenario as { title?: string } | null)?.title ?? "Scenario",
+                createdAt: assessment.created_at as string | null,
+                readiness,
+                scores: Object.fromEntries(
+                  COMPETENCIES.map((c) => [
+                    c.id,
+                    Number((result as Record<string, unknown>)[c.id] ?? 0),
+                  ]),
+                ),
+                explain,
+                strengths: (result.strengths ?? []) as string[],
+                missed: (result.missed ?? []) as string[],
+                suggestions: (result.suggestions ?? []) as string[],
+                coachingFeedback: result.coaching_feedback ?? "",
+                projection: proj,
+              });
+            } catch {
+              toast.error("Could not create the PDF. Please try again.");
+            }
+          }}
+        >
+          Download PDF
+        </Button>
       </div>
 
       <section className="grid gap-6 rounded-2xl border border-border bg-card p-8 sm:grid-cols-[auto_1fr] sm:items-center">

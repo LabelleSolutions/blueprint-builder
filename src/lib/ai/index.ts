@@ -29,8 +29,11 @@
  */
 
 import type { AIProvider } from "./provider";
-import { mockProvider } from "./mock-provider";
+import { gatewayProvider } from "./gateway-provider";
 
-export const aiProvider: AIProvider = mockProvider;
+export const aiProvider: AIProvider = gatewayProvider;
+
+/** Kept exported for tests / offline fallback. */
+export { mockProvider } from "./mock-provider";
 
 export type { AIProvider, JudgeInput, JudgeOutput, CompetencyScore } from "./provider";

@@ -146,3 +146,33 @@ RLS enabled on all user tables. Writes to `results` go through `supabaseAdmin` i
 - `src/lib/assessments.functions.ts` — server fns
 - `src/routes/_authenticated/` — protected app routes
 - `supabase/migrations/*` — schema + scenario seed
+
+---
+
+## Phase 3 — Live AI scoring + PDF export (verified 2026-09-19)
+
+### What changed
+- **Live provider added:** `src/lib/ai/gateway-provider.ts` implements the same `AIProvider`
+  interface via Lovable AI Gateway (`/v1/responses`, model `openai/gpt-6-astra`, streamed SSE,
+  strict `json_schema` output). Prompt is built from `src/config/competencies.ts` +
+  `src/config/roles.ts` — no competencies, roles, or weights are hardcoded in the provider.
+- **Swap-point unchanged:** `src/lib/ai/index.ts` now exports `gatewayProvider` as `aiProvider`
+  (`mockProvider` still exported for tests/offline). Nothing else in the codebase imports a provider.
+- **Validation:** provider output is clamped 0–100 and normalised so every configured competency
+  always has an explainability block, even if the model omits one.
+- **Coaching narrative:** the judge prefers the model narrative, falling back to the config template.
+- **PDF export:** `src/lib/report-pdf.ts` (jspdf) + "Download PDF" button on the report page.
+  Exports readiness, per-competency scores/weights, reason + evidence + recommendation,
+  strengths, development areas, next actions, coaching feedback, outcome projection.
+
+### Verification run
+- `bunx tsgo --noEmit` → clean (exit 0, no output).
+- Build log → `build OK`.
+- Explainability migration present: `drizzle/migrations/0000_add_explainability_to_results.sql`.
+- Direct provider test against the gateway → valid scored JSON for all five competencies.
+- Full browser regression (authenticated): role select → scenario → submit → results page
+  rendered readiness 73, five config-driven bars, "Why you scored this way" blocks, zero console
+  errors → "Download PDF" produced a 2-page PDF whose extracted text matches the on-screen report.
+
+### Still deferred (do not build)
+Digital twin, simulation engine, gamification, extra dashboards, multiple live providers.

@@ -55,7 +55,7 @@ function computeReadiness(scores: CompetencyScore[]): number {
 }
 
 export async function scoreResponse(input: ScoreInput): Promise<JudgeResult> {
-  const { competencies } = await aiProvider.judgeResponse({
+  const { competencies, coachingNarrative } = await aiProvider.judgeResponse({
     roleId: input.role,
     scenarioPrompt: input.scenarioPrompt,
     response: input.response,
@@ -81,7 +81,9 @@ export async function scoreResponse(input: ScoreInput): Promise<JudgeResult> {
     promotion_readiness_365d: Math.round(12 * scale),
   };
 
-  const coaching_feedback = composeCoaching(input.role, bottom[0]?.id, top[0]?.id, Math.round(readiness));
+  const coaching_feedback =
+    coachingNarrative?.trim() ||
+    composeCoaching(input.role, bottom[0]?.id, top[0]?.id, Math.round(readiness));
 
   // Flatten for current DB columns.
   const byId = Object.fromEntries(competencies.map((c) => [c.id, c.score]));

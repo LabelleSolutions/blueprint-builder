@@ -7,16 +7,15 @@
  * which model produced the scores.
  */
 
-import { COMPETENCIES } from "@/config/competencies";
-import { roleById } from "@/config/roles";
+import type { RuntimeCompetency } from "../runtime-config";
 import type { AIProvider, JudgeInput, JudgeOutput, CompetencyScore } from "./provider";
 
 const GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/responses";
 const MODEL = "openai/gpt-6-astra";
 
 function buildJudgePrompt(input: JudgeInput): string {
-  const role = roleById(input.roleId);
-  const rubric = COMPETENCIES.map(
+  const role = input.role;
+  const rubric = input.competencies.map(
     (c) =>
       `- ${c.id} (${c.label}, weight ${Math.round(c.weight * 100)}%): ${c.description}`,
   ).join("\n");
@@ -46,7 +45,7 @@ function buildJudgePrompt(input: JudgeInput): string {
     .join("\n");
 }
 
-const judgeSchema = {
+const judgeSchema = (comps: RuntimeCompetency[]) => ({
   type: "object",
   additionalProperties: false,
   properties: {
@@ -56,7 +55,7 @@ const judgeSchema = {
         type: "object",
         additionalProperties: false,
         properties: {
-          id: { type: "string", enum: COMPETENCIES.map((c) => c.id) },
+          id: { type: "string", enum: comps.map((c) => c.id) },
           score: { type: "number" },
           reason: { type: "string" },
           evidence: { type: "string" },
@@ -68,7 +67,7 @@ const judgeSchema = {
     coachingNarrative: { type: "string" },
   },
   required: ["competencies", "coachingNarrative"],
-} as const;
+});
 
 const clamp = (n: number) => Math.max(0, Math.min(100, Math.round(Number(n) || 0)));
 
@@ -132,7 +131,7 @@ export const gatewayProvider: AIProvider = {
             type: "json_schema",
             name: "leadership_judgement",
             strict: true,
-            schema: judgeSchema,
+            schema: judgeSchema(input.competencies),
           },
         },
       }),
@@ -159,7 +158,7 @@ export const gatewayProvider: AIProvider = {
     const byId = new Map<string, CompetencyScore>();
     for (const item of list as Array<Record<string, unknown>>) {
       const id = String(item["id"] ?? "");
-      if (!COMPETENCIES.some((c) => c.id === id)) continue;
+      if (!input.competencies.some((c) => c.id === id)) continue;
       byId.set(id, {
         id,
         score: clamp(item["score"] as number),
@@ -170,7 +169,7 @@ export const gatewayProvider: AIProvider = {
     }
 
     // Guarantee one entry per configured competency (config stays authoritative).
-    const competencies: CompetencyScore[] = COMPETENCIES.map(
+    const competencies: CompetencyScore[] = input.competencies.map(
       (c) =>
         byId.get(c.id) ?? {
           id: c.id,

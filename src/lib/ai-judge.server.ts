@@ -13,8 +13,7 @@
  * those belong inside the `./ai/*` provider implementations.
  */
 
-import { COMPETENCIES, competencyById } from "@/config/competencies";
-import { roleById } from "@/config/roles";
+import { computeReadiness, type RuntimeConfig, type RuntimeCompetency } from "./runtime-config";
 import { aiProvider, type CompetencyScore } from "./ai";
 
 export interface JudgeResult {
@@ -39,39 +38,35 @@ export interface JudgeResult {
 }
 
 export interface ScoreInput {
+  config: RuntimeConfig;
   role: string;
   scenarioPrompt: string;
   response: string;
 }
 
-/** Readiness Engine — weighted sum derived from competency config. */
-function computeReadiness(scores: CompetencyScore[]): number {
-  let total = 0;
-  for (const s of scores) {
-    const def = competencyById(s.id);
-    if (def) total += s.score * def.weight;
-  }
-  return Math.round(total * 100) / 100;
-}
-
 export async function scoreResponse(input: ScoreInput): Promise<JudgeResult> {
+  const comps = input.config.competencies;
+  const roleDef = input.config.roles.find((r) => r.id === input.role);
+  const def = (id: string): RuntimeCompetency | undefined => comps.find((c) => c.id === id);
   const { competencies, coachingNarrative } = await aiProvider.judgeResponse({
     roleId: input.role,
+    role: roleDef,
+    competencies: comps,
     scenarioPrompt: input.scenarioPrompt,
     response: input.response,
   });
 
   // Readiness Engine (server-side, never trust model for the weighted sum).
-  const readiness = computeReadiness(competencies);
+  const readiness = computeReadiness(competencies, comps);
 
   // Reflection: top 2 strengths, bottom 2 development areas.
   const ranked = [...competencies].sort((a, b) => b.score - a.score);
   const top = ranked.slice(0, 2);
   const bottom = ranked.slice(-2);
 
-  const strengths = top.map((c) => competencyById(c.id)?.templates.strength ?? "");
-  const missed = bottom.map((c) => competencyById(c.id)?.templates.missed ?? "");
-  const suggestions = bottom.map((c) => competencyById(c.id)?.templates.suggestion ?? "");
+  const strengths = top.map((c) => def(c.id)?.templates.strength ?? "");
+  const missed = bottom.map((c) => def(c.id)?.templates.missed ?? "");
+  const suggestions = bottom.map((c) => def(c.id)?.templates.suggestion ?? "");
 
   // Outcome Projection — deltas scaled by readiness.
   const scale = readiness / 70;
@@ -83,7 +78,7 @@ export async function scoreResponse(input: ScoreInput): Promise<JudgeResult> {
 
   const coaching_feedback =
     coachingNarrative?.trim() ||
-    composeCoaching(input.role, bottom[0]?.id, top[0]?.id, Math.round(readiness));
+    composeCoaching(roleDef?.label ?? input.role.replace(/_/g, " "), def(bottom[0]?.id ?? ""), def(top[0]?.id ?? ""), Math.round(readiness));
 
   // Flatten for current DB columns.
   const byId = Object.fromEntries(competencies.map((c) => [c.id, c.score]));
@@ -103,10 +98,7 @@ export async function scoreResponse(input: ScoreInput): Promise<JudgeResult> {
   };
 }
 
-function composeCoaching(role: string, weakest: string | undefined, strongest: string | undefined, readiness: number): string {
-  const roleLabel = roleById(role)?.label ?? role.replace(/_/g, " ");
-  const weakDef = weakest ? competencyById(weakest) : undefined;
-  const strongDef = strongest ? competencyById(strongest) : undefined;
+function composeCoaching(roleLabel: string, weakDef: RuntimeCompetency | undefined, strongDef: RuntimeCompetency | undefined, readiness: number): string {
   return [
     `Your readiness score is ${readiness}/100 for a ${roleLabel} scenario.`,
     strongDef ? `Your strongest signal was ${strongDef.label.toLowerCase()} — keep leaning on it.` : "",

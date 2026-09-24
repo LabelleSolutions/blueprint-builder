@@ -79,7 +79,10 @@ export const submitResponse = createServerFn({ method: "POST" })
 
     const { scoreResponse } = await import("./ai-judge.server");
     const scenarioPrompt = (a.scenario as { prompt: string } | null)?.prompt ?? "";
+    const { loadRuntimeConfig } = await import("./runtime-config.server");
+    const config = await loadRuntimeConfig(supabase);
     const judged = await scoreResponse({
+      config,
       role: a.role,
       scenarioPrompt,
       response: data.response,
@@ -143,4 +146,16 @@ export const listMyAssessments = createServerFn({ method: "GET" })
       .limit(50);
     if (error) throw new Error(error.message);
     return data ?? [];
+  });
+
+export const getRuntimeConfig = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { loadRuntimeConfig } = await import("./runtime-config.server");
+    const config = await loadRuntimeConfig(context.supabase);
+    const { data: isAdmin } = await context.supabase.rpc("has_role", {
+      _user_id: context.userId,
+      _role: "admin",
+    });
+    return { ...config, isAdmin: !!isAdmin };
   });

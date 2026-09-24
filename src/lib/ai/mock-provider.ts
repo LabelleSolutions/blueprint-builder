@@ -6,7 +6,7 @@
  * (Gemini / OpenAI / Claude) by changing one line in `./index.ts`.
  */
 
-import { COMPETENCIES, type CompetencyDef } from "@/config/competencies";
+import { safeRegex, type RuntimeCompetency } from "../runtime-config";
 import type { AIProvider, JudgeInput, JudgeOutput, CompetencyScore } from "./provider";
 
 function hash(s: string): number {
@@ -20,8 +20,9 @@ function hash(s: string): number {
 
 const clamp = (n: number, lo = 0, hi = 100) => Math.max(lo, Math.min(hi, Math.round(n)));
 
-function scoreOne(c: CompetencyDef, text: string, baseline: number, seed: number, i: number): CompetencyScore {
-  const hits = c.signals.reduce(
+function scoreOne(c: RuntimeCompetency, text: string, baseline: number, seed: number, i: number): CompetencyScore {
+  const regexes = c.signals.map(safeRegex).filter((r): r is RegExp => !!r);
+  const hits = regexes.reduce(
     (acc, re) => acc + (text.match(new RegExp(re.source, "gi"))?.length ?? 0),
     0,
   );
@@ -31,7 +32,7 @@ function scoreOne(c: CompetencyDef, text: string, baseline: number, seed: number
 
   // Evidence: first signal match, if any.
   let evidence = "";
-  for (const re of c.signals) {
+  for (const re of regexes) {
     const m = text.match(new RegExp(re.source, "i"));
     if (m) {
       evidence = `"${m[0]}"`;
@@ -60,7 +61,7 @@ export const mockProvider: AIProvider = {
     const seed = hash(`${input.roleId}|${input.scenarioPrompt}|${text}`);
     const baseline = 38 + Math.min(1, text.length / 600) * 32;
 
-    const competencies = COMPETENCIES.map((c, i) => scoreOne(c, text, baseline, seed, i));
+    const competencies = input.competencies.map((c, i) => scoreOne(c, text, baseline, seed, i));
     return { competencies };
   },
 };

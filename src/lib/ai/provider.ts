@@ -3,22 +3,23 @@
  * implement. The platform never calls Gemini / OpenAI / Claude directly;
  * it calls `aiProvider.judgeResponse(...)`.
  *
- * To add a new provider (Gemini / OpenAI / Claude / local), implement
- * this interface in a new file and re-export it from `./index.ts`. Zero
- * other files in the codebase need to change.
+ * Competencies and the role profile are passed in (loaded from the
+ * editable runtime config), so providers never import config directly.
  */
 
-import type { CompetencyId } from "@/config/competencies";
+import type { RuntimeCompetency, RuntimeRole } from "../runtime-config";
 
 export interface JudgeInput {
   roleId: string;
+  role?: RuntimeRole;
+  competencies: RuntimeCompetency[];
   scenarioPrompt: string;
   response: string;
 }
 
 /** Per-competency explainability block — required by the PRD. */
 export interface CompetencyScore {
-  id: CompetencyId;
+  id: string;
   score: number; // 0–100
   reason: string;
   evidence: string;
@@ -32,8 +33,6 @@ export interface JudgeOutput {
 }
 
 export interface AIProvider {
-  /** Identifier surfaced in logs / debug. */
   readonly name: string;
-  /** Score a single response against every configured competency. */
   judgeResponse(input: JudgeInput): Promise<JudgeOutput>;
 }

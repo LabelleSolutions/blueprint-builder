@@ -91,6 +91,69 @@ export type Database = {
         }
         Relationships: []
       }
+      competencies: {
+        Row: {
+          description: string
+          id: string
+          label: string
+          signals: string[]
+          sort: number
+          templates: Json
+          updated_at: string
+          weight: number
+        }
+        Insert: {
+          description?: string
+          id: string
+          label: string
+          signals?: string[]
+          sort?: number
+          templates?: Json
+          updated_at?: string
+          weight: number
+        }
+        Update: {
+          description?: string
+          id?: string
+          label?: string
+          signals?: string[]
+          sort?: number
+          templates?: Json
+          updated_at?: string
+          weight?: number
+        }
+        Relationships: []
+      }
+      config_audit: {
+        Row: {
+          actor: string
+          after: Json | null
+          before: Json | null
+          created_at: string
+          entity: string
+          entity_id: string | null
+          id: string
+        }
+        Insert: {
+          actor: string
+          after?: Json | null
+          before?: Json | null
+          created_at?: string
+          entity: string
+          entity_id?: string | null
+          id?: string
+        }
+        Update: {
+          actor?: string
+          after?: Json | null
+          before?: Json | null
+          created_at?: string
+          entity?: string
+          entity_id?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
       digital_twins: {
         Row: {
           coaching_score: number | null
@@ -276,6 +339,30 @@ export type Database = {
           },
         ]
       }
+      role_profiles: {
+        Row: {
+          id: Database["public"]["Enums"]["leadership_role"]
+          label: string
+          tagline: string
+          target_competencies: string[]
+          updated_at: string
+        }
+        Insert: {
+          id: Database["public"]["Enums"]["leadership_role"]
+          label: string
+          tagline?: string
+          target_competencies?: string[]
+          updated_at?: string
+        }
+        Update: {
+          id?: Database["public"]["Enums"]["leadership_role"]
+          label?: string
+          tagline?: string
+          target_competencies?: string[]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       scenarios: {
         Row: {
           created_at: string
@@ -300,14 +387,39 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
+      app_role: "admin" | "moderator" | "user"
       leadership_role:
         | "engineering_manager"
         | "team_lead"
@@ -442,6 +554,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["admin", "moderator", "user"],
       leadership_role: [
         "engineering_manager",
         "team_lead",

@@ -31,7 +31,6 @@ export const startAssessment = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     let q = supabase.from("scenarios").select("id, title, prompt").eq("role", data.role).eq("status", "approved");
     if (data.scenarioId) q = q.eq("id", data.scenarioId);
-    else q = q.is("created_by", null); // shared bank only; own scenarios are picked explicitly
     const { data: scenarios, error: sErr } = await q;
     if (sErr) throw new Error(sErr.message);
     if (!scenarios || scenarios.length === 0)

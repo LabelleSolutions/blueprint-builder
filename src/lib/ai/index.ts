@@ -1,39 +1,23 @@
 /**
  * SINGLE SWAP-POINT for AI providers.
  *
- * The rest of the codebase only ever imports `aiProvider` from here.
- * To switch model backends:
- *
- *   import { geminiProvider } from "./gemini-provider";
- *   export const aiProvider: AIProvider = geminiProvider;
- *
- * No UI, business logic, schema, workflow, competency engine, or
- * readiness engine code needs to change.
- *
- * Example provider stubs (NOT implemented — just shape):
- *
- *   // gemini-provider.ts
- *   export const geminiProvider: AIProvider = {
- *     name: "gemini-2.5-flash",
- *     async judgeResponse({ roleId, scenarioPrompt, response }) {
- *       const res = await callLovableAIGateway({
- *         model: "google/gemini-2.5-flash",
- *         prompt: buildJudgePrompt({ roleId, scenarioPrompt, response }),
- *       });
- *       return parseJudgeJSON(res); // must satisfy JudgeOutput
- *     },
- *   };
- *
- *   // openai-provider.ts → model: "openai/gpt-5-mini", same shape.
- *   // claude-provider.ts → call Anthropic, same shape.
+ * The rest of the codebase only imports `aiProvider` from here.
+ * To switch models, change ACTIVE_PROVIDER to "openai", "gemini" or "mock".
+ * No UI, business logic, schema, workflow, competency or readiness engine
+ * code needs to change. A Claude provider would be one more file with the
+ * same `AIProvider` shape, added to the registry below.
  */
-
 import type { AIProvider } from "./provider";
-import { gatewayProvider } from "./gateway-provider";
+import { openaiProvider } from "./openai-provider";
+import { geminiProvider } from "./gemini-provider";
+import { mockProvider } from "./mock-provider";
 
-export const aiProvider: AIProvider = gatewayProvider;
+export const providers = { openai: openaiProvider, gemini: geminiProvider, mock: mockProvider } as const;
+export type ProviderKey = keyof typeof providers;
 
-/** Kept exported for tests / offline fallback. */
-export { mockProvider } from "./mock-provider";
+export const ACTIVE_PROVIDER: ProviderKey = "openai";
 
+export const aiProvider: AIProvider = providers[ACTIVE_PROVIDER];
+
+export { mockProvider, openaiProvider, geminiProvider };
 export type { AIProvider, JudgeInput, JudgeOutput, CompetencyScore } from "./provider";

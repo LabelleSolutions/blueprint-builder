@@ -14,9 +14,12 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/app'
 import { Route as AuthenticatedAppIndexRouteImport } from './routes/_authenticated/app.index'
+import { Route as AuthenticatedAppScenariosRouteImport } from './routes/_authenticated/app.scenarios'
+import { Route as AuthenticatedAppAdminRouteImport } from './routes/_authenticated/app.admin'
 import { Route as AuthenticatedAppAssessIndexRouteImport } from './routes/_authenticated/app.assess.index'
 import { Route as AuthenticatedAppResultsAssessmentIdRouteImport } from './routes/_authenticated/app.results.$assessmentId'
 import { Route as AuthenticatedAppAssessAssessmentIdRouteImport } from './routes/_authenticated/app.assess.$assessmentId'
+import { Route as AuthenticatedAppAdminRateAssessmentIdRouteImport } from './routes/_authenticated/app.admin.rate.$assessmentId'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -42,6 +45,17 @@ const AuthenticatedAppIndexRoute = AuthenticatedAppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedAppRoute,
 } as any)
+const AuthenticatedAppScenariosRoute =
+  AuthenticatedAppScenariosRouteImport.update({
+    id: '/scenarios',
+    path: '/scenarios',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
+const AuthenticatedAppAdminRoute = AuthenticatedAppAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => AuthenticatedAppRoute,
+} as any)
 const AuthenticatedAppAssessIndexRoute =
   AuthenticatedAppAssessIndexRouteImport.update({
     id: '/assess/',
@@ -60,23 +74,35 @@ const AuthenticatedAppAssessAssessmentIdRoute =
     path: '/assess/$assessmentId',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
+const AuthenticatedAppAdminRateAssessmentIdRoute =
+  AuthenticatedAppAdminRateAssessmentIdRouteImport.update({
+    id: '/rate/$assessmentId',
+    path: '/rate/$assessmentId',
+    getParentRoute: () => AuthenticatedAppAdminRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/app': typeof AuthenticatedAppRouteWithChildren
+  '/app/admin': typeof AuthenticatedAppAdminRouteWithChildren
+  '/app/scenarios': typeof AuthenticatedAppScenariosRoute
   '/app/': typeof AuthenticatedAppIndexRoute
   '/app/assess/$assessmentId': typeof AuthenticatedAppAssessAssessmentIdRoute
   '/app/results/$assessmentId': typeof AuthenticatedAppResultsAssessmentIdRoute
   '/app/assess/': typeof AuthenticatedAppAssessIndexRoute
+  '/app/admin/rate/$assessmentId': typeof AuthenticatedAppAdminRateAssessmentIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/app/admin': typeof AuthenticatedAppAdminRouteWithChildren
+  '/app/scenarios': typeof AuthenticatedAppScenariosRoute
   '/app': typeof AuthenticatedAppIndexRoute
   '/app/assess/$assessmentId': typeof AuthenticatedAppAssessAssessmentIdRoute
   '/app/results/$assessmentId': typeof AuthenticatedAppResultsAssessmentIdRoute
   '/app/assess': typeof AuthenticatedAppAssessIndexRoute
+  '/app/admin/rate/$assessmentId': typeof AuthenticatedAppAdminRateAssessmentIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -84,10 +110,13 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/app': typeof AuthenticatedAppRouteWithChildren
+  '/_authenticated/app/admin': typeof AuthenticatedAppAdminRouteWithChildren
+  '/_authenticated/app/scenarios': typeof AuthenticatedAppScenariosRoute
   '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
   '/_authenticated/app/assess/$assessmentId': typeof AuthenticatedAppAssessAssessmentIdRoute
   '/_authenticated/app/results/$assessmentId': typeof AuthenticatedAppResultsAssessmentIdRoute
   '/_authenticated/app/assess/': typeof AuthenticatedAppAssessIndexRoute
+  '/_authenticated/app/admin/rate/$assessmentId': typeof AuthenticatedAppAdminRateAssessmentIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -95,28 +124,37 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/app'
+    | '/app/admin'
+    | '/app/scenarios'
     | '/app/'
     | '/app/assess/$assessmentId'
     | '/app/results/$assessmentId'
     | '/app/assess/'
+    | '/app/admin/rate/$assessmentId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/auth'
+    | '/app/admin'
+    | '/app/scenarios'
     | '/app'
     | '/app/assess/$assessmentId'
     | '/app/results/$assessmentId'
     | '/app/assess'
+    | '/app/admin/rate/$assessmentId'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
     | '/_authenticated/app'
+    | '/_authenticated/app/admin'
+    | '/_authenticated/app/scenarios'
     | '/_authenticated/app/'
     | '/_authenticated/app/assess/$assessmentId'
     | '/_authenticated/app/results/$assessmentId'
     | '/_authenticated/app/assess/'
+    | '/_authenticated/app/admin/rate/$assessmentId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -162,6 +200,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppIndexRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/app/scenarios': {
+      id: '/_authenticated/app/scenarios'
+      path: '/scenarios'
+      fullPath: '/app/scenarios'
+      preLoaderRoute: typeof AuthenticatedAppScenariosRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/app/admin': {
+      id: '/_authenticated/app/admin'
+      path: '/admin'
+      fullPath: '/app/admin'
+      preLoaderRoute: typeof AuthenticatedAppAdminRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
     '/_authenticated/app/assess/': {
       id: '/_authenticated/app/assess/'
       path: '/assess'
@@ -183,10 +235,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppAssessAssessmentIdRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/app/admin/rate/$assessmentId': {
+      id: '/_authenticated/app/admin/rate/$assessmentId'
+      path: '/rate/$assessmentId'
+      fullPath: '/app/admin/rate/$assessmentId'
+      preLoaderRoute: typeof AuthenticatedAppAdminRateAssessmentIdRouteImport
+      parentRoute: typeof AuthenticatedAppAdminRoute
+    }
   }
 }
 
+interface AuthenticatedAppAdminRouteChildren {
+  AuthenticatedAppAdminRateAssessmentIdRoute: typeof AuthenticatedAppAdminRateAssessmentIdRoute
+}
+
+const AuthenticatedAppAdminRouteChildren: AuthenticatedAppAdminRouteChildren = {
+  AuthenticatedAppAdminRateAssessmentIdRoute:
+    AuthenticatedAppAdminRateAssessmentIdRoute,
+}
+
+const AuthenticatedAppAdminRouteWithChildren =
+  AuthenticatedAppAdminRoute._addFileChildren(
+    AuthenticatedAppAdminRouteChildren,
+  )
+
 interface AuthenticatedAppRouteChildren {
+  AuthenticatedAppAdminRoute: typeof AuthenticatedAppAdminRouteWithChildren
+  AuthenticatedAppScenariosRoute: typeof AuthenticatedAppScenariosRoute
   AuthenticatedAppIndexRoute: typeof AuthenticatedAppIndexRoute
   AuthenticatedAppAssessAssessmentIdRoute: typeof AuthenticatedAppAssessAssessmentIdRoute
   AuthenticatedAppResultsAssessmentIdRoute: typeof AuthenticatedAppResultsAssessmentIdRoute
@@ -194,6 +269,8 @@ interface AuthenticatedAppRouteChildren {
 }
 
 const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
+  AuthenticatedAppAdminRoute: AuthenticatedAppAdminRouteWithChildren,
+  AuthenticatedAppScenariosRoute: AuthenticatedAppScenariosRoute,
   AuthenticatedAppIndexRoute: AuthenticatedAppIndexRoute,
   AuthenticatedAppAssessAssessmentIdRoute:
     AuthenticatedAppAssessAssessmentIdRoute,

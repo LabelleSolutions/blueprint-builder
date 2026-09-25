@@ -24,18 +24,18 @@ export const ROLE_LABEL: Record<LeadershipRole, string> = {
 
 export const startAssessment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { role: LeadershipRole }) =>
-    z.object({ role: RoleEnum }).parse(d),
+  .inputValidator((d: { role: LeadershipRole; scenarioId?: string }) =>
+    z.object({ role: RoleEnum, scenarioId: z.string().uuid().optional() }).parse(d),
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    // pick a scenario for this role (random row)
-    const { data: scenarios, error: sErr } = await supabase
-      .from("scenarios")
-      .select("id, title, prompt")
-      .eq("role", data.role);
+    let q = supabase.from("scenarios").select("id, title, prompt").eq("role", data.role).eq("status", "approved");
+    if (data.scenarioId) q = q.eq("id", data.scenarioId);
+    else q = q.is("created_by", null); // shared bank only; own scenarios are picked explicitly
+    const { data: scenarios, error: sErr } = await q;
     if (sErr) throw new Error(sErr.message);
-    if (!scenarios || scenarios.length === 0) throw new Error("No scenarios for this role");
+    if (!scenarios || scenarios.length === 0)
+      throw new Error(data.scenarioId ? "This scenario isn't approved yet" : "No approved scenarios for this role");
     const pick = scenarios[Math.floor(Math.random() * scenarios.length)];
 
     const { data: a, error: aErr } = await supabase

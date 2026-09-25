@@ -15,6 +15,13 @@
       "when": 1790288019358,
       "tag": "0001_admin_studio",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790368082189,
+      "tag": "0002_leader_scenarios_and_human_ratings",
+      "breakpoints": true
     }
   ]
 }

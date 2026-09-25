@@ -223,6 +223,44 @@ export type Database = {
         }
         Relationships: []
       }
+      human_ratings: {
+        Row: {
+          assessment_id: string
+          created_at: string
+          id: string
+          notes: string
+          rater_id: string
+          rater_name: string
+          scores: Json
+        }
+        Insert: {
+          assessment_id: string
+          created_at?: string
+          id?: string
+          notes?: string
+          rater_id: string
+          rater_name?: string
+          scores?: Json
+        }
+        Update: {
+          assessment_id?: string
+          created_at?: string
+          id?: string
+          notes?: string
+          rater_id?: string
+          rater_name?: string
+          scores?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "human_ratings_assessment_id_fkey"
+            columns: ["assessment_id"]
+            isOneToOne: false
+            referencedRelation: "assessments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       personality_profiles: {
         Row: {
           agreeableness: number | null
@@ -366,23 +404,38 @@ export type Database = {
       scenarios: {
         Row: {
           created_at: string
+          created_by: string | null
           id: string
           prompt: string
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
           role: Database["public"]["Enums"]["leadership_role"]
+          status: string
           title: string
         }
         Insert: {
           created_at?: string
+          created_by?: string | null
           id?: string
           prompt: string
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           role: Database["public"]["Enums"]["leadership_role"]
+          status?: string
           title: string
         }
         Update: {
           created_at?: string
+          created_by?: string | null
           id?: string
           prompt?: string
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           role?: Database["public"]["Enums"]["leadership_role"]
+          status?: string
           title?: string
         }
         Relationships: []

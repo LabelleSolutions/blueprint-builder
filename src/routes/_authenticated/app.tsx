@@ -1,6 +1,9 @@
 import { createFileRoute, Link, Outlet, useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { getRuntimeConfig } from "@/lib/assessments.functions";
 
 export const Route = createFileRoute("/_authenticated/app")({
   component: AppShell,
@@ -8,6 +11,8 @@ export const Route = createFileRoute("/_authenticated/app")({
 
 function AppShell() {
   const navigate = useNavigate();
+  const getCfg = useServerFn(getRuntimeConfig);
+  const cfg = useQuery({ queryKey: ["runtime-config"], queryFn: () => getCfg() });
   async function signOut() {
     await supabase.auth.signOut();
     navigate({ to: "/auth", replace: true });
@@ -23,6 +28,14 @@ function AppShell() {
             <Button asChild size="sm" variant="ghost">
               <Link to="/app">Dashboard</Link>
             </Button>
+            <Button asChild size="sm" variant="ghost">
+              <Link to="/app/scenarios">My scenarios</Link>
+            </Button>
+            {cfg.data?.isAdmin && (
+              <Button asChild size="sm" variant="ghost">
+                <Link to="/app/admin">Admin</Link>
+              </Button>
+            )}
             <Button size="sm" variant="ghost" onClick={signOut}>
               Sign out
             </Button>

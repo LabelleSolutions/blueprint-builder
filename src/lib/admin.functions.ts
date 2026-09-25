@@ -104,7 +104,7 @@ export const listScenarios = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertAdmin(context);
-    const { data, error } = await context.supabase.from("scenarios").select("id,role,title,prompt,created_at").order("role").order("created_at");
+    const { data, error } = await context.supabase.from("scenarios").select("id,role,title,prompt,created_at,status,review_notes,reviewed_by,created_by").order("role").order("created_at");
     if (error) throw new Error(error.message);
     return data ?? [];
   });
@@ -175,4 +175,76 @@ export const listPreviewResults = createServerFn({ method: "GET" })
         { id: "psychological_safety", score: r.psychological_safety },
       ],
     }));
+  });
+
+export const reviewScenario = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({ id: z.string().uuid(), status: z.enum(["approved", "rejected"]), notes: z.string().max(500) }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const { error } = await context.supabase
+      .from("scenarios")
+      .update({ status: data.status, review_notes: data.notes || null, reviewed_by: "admin", reviewed_at: new Date().toISOString() })
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    await audit(context, "scenario_review", data.id, null, data);
+    return { ok: true };
+  });
+
+/** Full scored assessment (any user) for human rating. Admin only. */
+export const getRatingTarget = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: a, error } = await supabaseAdmin
+      .from("assessments")
+      .select("id, role, response, created_at, scenario:scenarios(title, prompt), result:results(*)")
+      .eq("id", data.id)
+      .single();
+    if (error) throw new Error(error.message);
+    const { data: ratings } = await context.supabase
+      .from("human_ratings")
+      .select("id, rater_name, scores, notes, created_at")
+      .eq("assessment_id", data.id)
+      .order("created_at", { ascending: false });
+    const result = Array.isArray(a.result) ? a.result[0] : a.result;
+    return {
+      id: a.id,
+      role: a.role,
+      response: a.response ?? "",
+      createdAt: a.created_at,
+      scenario: a.scenario as { title: string; prompt: string } | null,
+      readiness: result ? Number(result.readiness_score) : null,
+      explainability: (result?.explainability ?? []) as Array<{ id: string; score: number; reason: string; evidence: string; recommendation: string }>,
+      ratings: (ratings ?? []).map((r) => ({ ...r, scores: r.scores as Record<string, number> })),
+    };
+  });
+
+export const saveHumanRating = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        assessmentId: z.string().uuid(),
+        raterName: z.string().trim().min(1).max(100),
+        scores: z.record(z.string(), z.number().min(0).max(100)),
+        notes: z.string().max(2000),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const { error } = await context.supabase.from("human_ratings").insert({
+      assessment_id: data.assessmentId,
+      rater_id: context.userId,
+      rater_name: data.raterName,
+      scores: data.scores,
+      notes: data.notes,
+    });
+    if (error) throw new Error(error.message);
+    return { ok: true };
   });
